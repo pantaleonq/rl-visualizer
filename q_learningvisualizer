@@ -1,0 +1,497 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Q-Learning Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0d0f14; --surface: #161920; --border: #252830;
+            --accent: #4af0a0; --red: #e06c75; --text: #e8eaf0; --muted: #7a7f8e;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { background: var(--bg); color: var(--text); font-family: 'JetBrains Mono','Courier New',monospace; min-height: 100vh; padding: 1rem; }
+        a { color: var(--accent); text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        h1 { color: var(--accent); font-size: 1.5rem; text-align: center; margin-bottom: 0.25rem; }
+        .subtitle  { color: var(--muted); font-size: 0.72rem; text-align: center; margin-bottom: 0.15rem; }
+        .author    { color: var(--muted); font-size: 0.65rem; text-align: center; margin-bottom: 0.25rem; }
+        .turbo-label { color: var(--red); font-size: 0.65rem; text-align: center; min-height: 1rem; margin-bottom: 0.5rem; }
+        .layout { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+        .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
+        .panel-label { color: var(--accent); font-size: 0.6rem; letter-spacing: 0.15em; margin-bottom: 0.75rem; }
+        #controls { width: 200px; flex-shrink: 0; }
+        .slider-row { margin-bottom: 0.65rem; }
+        .slider-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.2rem; }
+        .slider-label { font-size: 0.67rem; color: var(--muted); }
+        .help-btn {
+            background: rgba(74,240,160,0.1); border: 1px solid rgba(74,240,160,0.3);
+            border-radius: 50%; width: 15px; height: 15px; color: var(--accent);
+            font-size: 0.58rem; cursor: pointer; display: flex; align-items: center;
+            justify-content: center; padding: 0; flex-shrink: 0; font-family: inherit;
+        }
+        input[type=range] { width: 100%; accent-color: var(--accent); cursor: pointer; }
+        .btn-row { display: flex; flex-direction: column; gap: 0.5rem; margin-top: 0.8rem; }
+        .btn { border: none; border-radius: 4px; padding: 0.52rem; font-family: inherit; font-size: 0.8rem; cursor: pointer; font-weight: 700; }
+        .btn:disabled { cursor: not-allowed; opacity: 0.5; }
+        .btn-primary { background: var(--accent); color: var(--bg); }
+        .btn-stop  { background: transparent; color: var(--red); border: 1px solid var(--red); font-weight: 400; }
+        .btn-reset { background: transparent; color: var(--muted); border: 1px solid var(--border); font-weight: 400; }
+        .stats-section { margin-top: 0.9rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+        .stat-row { display: flex; justify-content: space-between; font-size: 0.7rem; margin-bottom: 0.35rem; }
+        .stat-val { color: var(--accent); }
+        .done-label { color: var(--accent); font-size: 0.68rem; text-align: center; margin-top: 0.35rem; }
+        .ee-section { margin-top: 0.9rem; border-top: 1px solid var(--border); padding-top: 0.8rem; }
+        .ee-bar { height: 10px; border-radius: 5px; overflow: hidden; display: flex; margin-bottom: 0.35rem; }
+        .ee-explore { background: var(--red); transition: width 0.3s; }
+        .ee-exploit { flex: 1; background: var(--accent); }
+        .ee-labels { display: flex; justify-content: space-between; font-size: 0.58rem; }
+        .ee-explore-label { color: var(--red); }
+        .ee-exploit-label { color: var(--accent); }
+        #grid-col { display: flex; flex-direction: column; gap: 1rem; }
+        #grid-container { display: grid; gap: 3px; }
+        .cell {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            position: relative; border-radius: 4px; border: 1px solid var(--border);
+            transition: background 0.2s;
+        }
+        .cell.agent { border-color: var(--accent); box-shadow: 0 0 10px var(--accent); }
+        .cell-icon  { font-size: 1.2rem; line-height: 1; }
+        .cell-arrow { font-size: 0.85rem; line-height: 1; color: var(--text); }
+        .cell-qval  { font-size: 0.5rem; color: var(--muted); position: absolute; bottom: 2px; }
+        .cell-type  { font-size: 0.48rem; font-weight: 700; position: absolute; top: 2px; left: 4px; }
+        .grid-legend { display: flex; gap: 0.8rem; margin-top: 0.5rem; font-size: 0.58rem; color: var(--muted); flex-wrap: wrap; }
+        .grid-legend span { color: var(--text); }
+        #chart-panel svg { display: block; width: 100%; height: 65px; }
+        .chart-footer { display: flex; justify-content: space-between; font-size: 0.57rem; color: var(--muted); margin-top: 0.2rem; }
+        #qtable-panel { width: 185px; flex-shrink: 0; max-height: 500px; overflow-y: auto; }
+        .qt-header { font-size: 0.56rem; color: var(--muted); margin-bottom: 0.45rem; }
+        .qt-row { display: flex; gap: 2px; margin-bottom: 2px; align-items: center; }
+        .qt-idx { width: 18px; font-size: 0.54rem; flex-shrink: 0; }
+        .qt-cell { flex: 1; height: 15px; border-radius: 2px; border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 0.4rem; color: var(--text); }
+        .qt-cell.best { border-color: var(--accent); }
+        #tooltip-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 100; align-items: center; justify-content: center; }
+        #tooltip-overlay.visible { display: flex; }
+        #tooltip-box { background: var(--surface); border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; max-width: 360px; margin: 1rem; }
+        #tooltip-title { color: var(--accent); font-size: 1.1rem; font-weight: 700; margin-bottom: 0.5rem; }
+        #tooltip-desc  { color: var(--text); font-size: 0.85rem; line-height: 1.65; white-space: pre-line; }
+        #tooltip-extra { margin-top: 1rem; background: var(--bg); border-radius: 6px; padding: 0.8rem; font-size: 0.78rem; }
+        .tt-explore { color: var(--red); margin-bottom: 0.4rem; }
+        .tt-exploit { color: var(--accent); }
+        #tooltip-close { margin-top: 1rem; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); padding: 0.3rem 0.8rem; font-family: inherit; font-size: 0.75rem; cursor: pointer; }
+        .footer { text-align: center; margin-top: 2rem; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 1rem; }
+        @media (max-width: 600px) { #controls { width: 100%; } #qtable-panel { width: 100%; max-height: 200px; } }
+    </style>
+</head>
+<body>
+
+<div id="tooltip-overlay">
+    <div id="tooltip-box">
+        <div id="tooltip-title"></div>
+        <div id="tooltip-desc"></div>
+        <div id="tooltip-extra" style="display:none;"></div>
+        <button id="tooltip-close" onclick="closeTooltip()">close</button>
+    </div>
+</div>
+
+<h1>Q-Learning Visualizer</h1>
+<p class="subtitle">Q(s,a) ← Q(s,a) + α · [ r + γ · max Q(s′,a′) − Q(s,a) ]</p>
+<p class="author">
+    by <a href="https://github.com/DEIN_USERNAME" target="_blank">Pantaleon Quick</a>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/DEIN_USERNAME/rl-visualizer" target="_blank">GitHub</a>
+    &nbsp;·&nbsp; inspired by my
+    <a href="https://github.com/DEIN_USERNAME/bachelor-thesis" target="_blank">Bachelor Thesis on RL Convergence</a>
+</p>
+<p class="turbo-label" id="turbo-label"></p>
+
+<div class="layout">
+
+    <div class="panel" id="controls">
+        <div class="panel-label">// PARAMETERS</div>
+
+        <div class="slider-row">
+            <div class="slider-header"><span class="slider-label" id="label-mapsize">Map Size = 5</span></div>
+            <input type="range" id="mapsize" min="4" max="8" step="1" value="5" oninput="updateLabel('mapsize','Map Size')">
+        </div>
+        <div class="slider-row">
+            <div class="slider-header">
+                <span class="slider-label" id="label-lr">α = 0.8</span>
+                <button class="help-btn" onclick="showTooltip('lr')">?</button>
+            </div>
+            <input type="range" id="lr" min="0.05" max="1" step="0.05" value="0.8" oninput="updateLabel('lr','α')">
+        </div>
+        <div class="slider-row">
+            <div class="slider-header">
+                <span class="slider-label" id="label-gamma">γ = 0.95</span>
+                <button class="help-btn" onclick="showTooltip('gamma')">?</button>
+            </div>
+            <input type="range" id="gamma" min="0.5" max="0.999" step="0.01" value="0.95" oninput="updateLabel('gamma','γ')">
+        </div>
+        <div class="slider-row">
+            <div class="slider-header">
+                <span class="slider-label" id="label-epsilon">ε = 0.1</span>
+                <button class="help-btn" onclick="showTooltip('epsilon')">?</button>
+            </div>
+            <input type="range" id="epsilon" min="0.01" max="1" step="0.01" value="0.1" oninput="onEpsilonChange()">
+        </div>
+        <div class="slider-row">
+            <div class="slider-header"><span class="slider-label" id="label-episodes">Episodes = 300</span></div>
+            <input type="range" id="episodes" min="50" max="1000" step="50" value="300" oninput="updateLabel('episodes','Episodes')">
+        </div>
+        <div class="slider-row">
+            <div class="slider-header"><span class="slider-label" id="label-speed">Speed = 70</span></div>
+            <input type="range" id="speed" min="1" max="100" step="1" value="70" oninput="onSpeedChange()">
+        </div>
+
+        <div class="btn-row">
+            <button class="btn btn-primary" id="btn-train" onclick="startTraining()">▶  Train</button>
+            <button class="btn btn-stop"    id="btn-stop"  onclick="stopTraining()" style="display:none;">⏹  Stop</button>
+            <button class="btn btn-reset"   id="btn-reset" onclick="resetAll()">↺  Reset</button>
+        </div>
+
+        <div class="stats-section">
+            <div class="panel-label">// STATS</div>
+            <div class="stat-row"><span style="color:var(--muted)">Episode</span>     <span class="stat-val" id="stat-ep">0 / 300</span></div>
+            <div class="stat-row"><span style="color:var(--muted)">Success Rate</span><span class="stat-val" id="stat-sr">0%</span></div>
+            <div class="done-label" id="done-label"></div>
+        </div>
+
+        <div class="ee-section">
+            <div class="panel-label">// ε EXPLORE / EXPLOIT</div>
+            <div class="ee-bar">
+                <div class="ee-explore" id="ee-explore" style="width:10%"></div>
+                <div class="ee-exploit"></div>
+            </div>
+            <div class="ee-labels">
+                <span class="ee-explore-label" id="ee-explore-label">🎲 10%</span>
+                <span class="ee-exploit-label" id="ee-exploit-label">90% 🧠</span>
+            </div>
+        </div>
+    </div>
+
+    <div id="grid-col">
+        <div class="panel">
+            <div class="panel-label">// ENVIRONMENT · Q-VALUE HEATMAP</div>
+            <div id="grid-container"></div>
+            <div class="grid-legend">
+                <span>🚀</span> Start &nbsp;
+                <span>🏁</span> Goal &nbsp;
+                <span>🕳️</span> Hole &nbsp;
+                <span>↓</span> Best action &nbsp;
+                <span>🟢</span> High Q
+            </div>
+        </div>
+
+        <div class="panel" id="chart-panel">
+            <div class="panel-label">// REWARD PER EPISODE (smoothed)</div>
+            <svg id="reward-chart" viewBox="0 0 300 1" preserveAspectRatio="none">
+                <defs>
+                    <linearGradient id="grad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%"   stop-color="#4af0a0" stop-opacity="0.4"/>
+                        <stop offset="100%" stop-color="#4af0a0" stop-opacity="0.03"/>
+                    </linearGradient>
+                </defs>
+                <text x="150" y="0.55" text-anchor="middle" fill="#7a7f8e" font-size="0.08" font-family="monospace">Press ▶ Train to start</text>
+            </svg>
+            <div class="chart-footer">
+                <span>ep 0</span>
+                <span>1 = goal · 0 = hole</span>
+                <span id="chart-ep-label">ep 0</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel" id="qtable-panel">
+        <div class="panel-label">// Q-TABLE</div>
+        <div class="qt-header">state | ← ↓ → ↑</div>
+        <div id="qtable-body"></div>
+    </div>
+
+</div>
+
+<div class="footer">
+    Q-Learning on FrozenLake · vanilla JavaScript · no dependencies ·
+    <a href="https://github.com/DEIN_USERNAME/rl-visualizer" target="_blank">view source on GitHub</a>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════
+//  Q-LEARNING VISUALIZER
+//  Pantaleon Quick · github.com/pantaleonq
+//  Inspired by Bachelor Thesis on RL Convergence (FU Berlin)
+// ═══════════════════════════════════════════════════════
+
+let running = false, agentPos = 0, grid = [], qtable = [], mapSize = 5, rewardHistory = [];
+
+// Seeded LCG random number generator
+function makeRng(seed) {
+    let s = seed >>> 0;
+    return () => { s = (Math.imul(s, 1664525) + 1013904223) >>> 0; return s / 0xFFFFFFFF; };
+}
+
+// Grid generation (guaranteed path from S to G)
+const DIRS = { 0:[0,-1], 1:[1,0], 2:[0,1], 3:[-1,0] };
+
+function generateMap(size, seed) {
+    const rng = makeRng(seed);
+    let g;
+    do {
+        g = Array.from({length:size}, () => Array.from({length:size}, () => rng() < 0.82 ? "F" : "H"));
+        g[0][0] = "S"; g[size-1][size-1] = "G";
+    } while (!isReachable(g, size));
+    return g;
+}
+
+function isReachable(g, size) {
+    const vis = Array.from({length:size}, () => new Array(size).fill(false));
+    const q = [[0,0]]; vis[0][0] = true;
+    while (q.length) {
+        const [r,c] = q.shift();
+        if (r===size-1 && c===size-1) return true;
+        for (const [dr,dc] of Object.values(DIRS)) {
+            const nr=r+dr, nc=c+dc;
+            if (nr>=0 && nr<size && nc>=0 && nc<size && !vis[nr][nc] && g[nr][nc]!=="H") {
+                vis[nr][nc]=true; q.push([nr,nc]);
+            }
+        }
+    }
+    return false;
+}
+
+// Environment
+function stepEnv(state, action) {
+    const row=Math.floor(state/mapSize), col=state%mapSize;
+    const [dr,dc]=DIRS[action];
+    const nr=Math.max(0,Math.min(mapSize-1,row+dr)), nc=Math.max(0,Math.min(mapSize-1,col+dc));
+    const ns=nr*mapSize+nc, cell=grid[nr][nc];
+    if (cell==="H") return {ns, reward:0, done:true};
+    if (cell==="G") return {ns, reward:1, done:true};
+    return {ns, reward:0, done:false};
+}
+
+// Q-Learning core
+function qChooseAction(state, epsilon) {
+    if (Math.random() < epsilon) return Math.floor(Math.random()*4);
+    const row=qtable[state], maxVal=Math.max(...row);
+    const best=row.map((v,i)=>v===maxVal?i:-1).filter(i=>i!==-1);
+    return best[Math.floor(Math.random()*best.length)];
+}
+
+function qUpdate(state, action, reward, newState) {
+    const lr=parseFloat(document.getElementById("lr").value);
+    const gamma=parseFloat(document.getElementById("gamma").value);
+    const maxQ=Math.max(...qtable[newState]);
+    qtable[state][action] += lr * (reward + gamma*maxQ - qtable[state][action]);
+}
+
+// Color helpers
+function qColor(val, min, max) {
+    if (max===min) return "#1a1f2a";
+    const t=Math.max(0,Math.min(1,(val-min)/(max-min)));
+    return `rgba(${Math.round(20+t*20)},${Math.round(60+t*180)},${Math.round(80-t*50)},${0.15+t*0.8})`;
+}
+const CELL_COLOR={S:"#4a90e2",G:"#4af0a0",H:"#e06c75",F:"#7a7f8e"};
+const CELL_ICON ={S:"🚀",G:"🏁",H:"🕳️",F:""};
+const ARROW={0:"←",1:"↓",2:"→",3:"↑"};
+
+// Build DOM grid
+function buildGrid() {
+    mapSize=parseInt(document.getElementById("mapsize").value);
+    grid=generateMap(mapSize, 135+mapSize*7);
+    qtable=Array.from({length:mapSize*mapSize},()=>[0,0,0,0]);
+    agentPos=0; rewardHistory=[];
+    const cs=mapSize<=5?82:mapSize<=7?64:50;
+    const con=document.getElementById("grid-container");
+    con.style.gridTemplateColumns=`repeat(${mapSize},${cs}px)`;
+    con.innerHTML="";
+    grid.flat().forEach((cell,idx)=>{
+        const div=document.createElement("div"); div.className="cell"; div.id=`cell-${idx}`;
+        div.style.width=div.style.height=cs+"px";
+        const icon=document.createElement("div");  icon.className="cell-icon";
+        const arrow=document.createElement("div"); arrow.className="cell-arrow";
+        const qval=document.createElement("div");  qval.className="cell-qval";
+        const type=document.createElement("div");  type.className="cell-type";
+        icon.textContent=CELL_ICON[cell]||""; type.textContent=cell; type.style.color=CELL_COLOR[cell];
+        div.append(icon,arrow,qval,type); con.appendChild(div);
+    });
+    updateGridColors(); buildQTable(); resetChart();
+    document.getElementById("stat-ep").textContent=`0 / ${document.getElementById("episodes").value}`;
+    document.getElementById("stat-sr").textContent="0%";
+    document.getElementById("done-label").textContent="";
+}
+
+// Update grid visuals
+function updateGridColors() {
+    const allQ=qtable.flat(), qMin=Math.min(...allQ), qMax=Math.max(...allQ);
+    const cs=mapSize<=5?82:mapSize<=7?64:50;
+    grid.flat().forEach((cell,idx)=>{
+        const div=document.getElementById(`cell-${idx}`); if(!div)return;
+        const isAgent=(idx===agentPos)&&running;
+        div.className="cell"+(isAgent?" agent":"");
+        const maxQ=Math.max(...qtable[idx]), best=qtable[idx].indexOf(maxQ);
+        div.style.background=cell==="H"?"#1f0a0a":cell==="G"?"#0a1f0a":cell==="S"?"#0a0a1f":qColor(maxQ,qMin,qMax);
+        div.querySelector(".cell-icon").textContent=isAgent?"🤖":(CELL_ICON[cell]||"");
+        div.querySelector(".cell-arrow").textContent=(cell==="F"&&maxQ>0.001)?ARROW[best]:"";
+        div.querySelector(".cell-qval").textContent=cs>=65?maxQ.toFixed(2):"";
+    });
+}
+
+// Q-Table panel
+function buildQTable() {
+    const body=document.getElementById("qtable-body"); body.innerHTML="";
+    qtable.forEach((row,idx)=>{
+        const cell=grid.flat()[idx];
+        const div=document.createElement("div"); div.className="qt-row"; div.style.opacity=cell==="H"?"0.25":"1";
+        const span=document.createElement("span"); span.className="qt-idx"; span.textContent=idx; span.style.color=CELL_COLOR[cell]||"#7a7f8e";
+        div.appendChild(span);
+        row.forEach((_,a)=>{ const c=document.createElement("div"); c.className="qt-cell"; c.id=`qtc-${idx}-${a}`; div.appendChild(c); });
+        body.appendChild(div);
+    });
+}
+
+function updateQTableColors() {
+    const allQ=qtable.flat(), qMin=Math.min(...allQ), qMax=Math.max(...allQ);
+    qtable.forEach((row,idx)=>{
+        const maxQ=Math.max(...row);
+        row.forEach((q,a)=>{
+            const c=document.getElementById(`qtc-${idx}-${a}`); if(!c)return;
+            c.style.background=qColor(q,qMin,qMax);
+            c.className="qt-cell"+(q===maxQ&&maxQ>0.001?" best":"");
+            c.textContent=q>0.01?q.toFixed(1):"";
+        });
+    });
+}
+
+// Chart
+function resetChart() {
+    const svg=document.getElementById("reward-chart");
+    svg.setAttribute("viewBox","0 0 300 1");
+    svg.querySelectorAll("polyline,polygon,text").forEach(e=>e.remove());
+    const txt=document.createElementNS("http://www.w3.org/2000/svg","text");
+    txt.setAttribute("x","150"); txt.setAttribute("y","0.55");
+    txt.setAttribute("text-anchor","middle"); txt.setAttribute("fill","#7a7f8e");
+    txt.setAttribute("font-size","0.08"); txt.setAttribute("font-family","monospace");
+    txt.textContent="Press ▶ Train to start"; svg.appendChild(txt);
+}
+
+function updateChart() {
+    const n=rewardHistory.length; if(n<2)return;
+    const win=Math.max(1,Math.floor(n/40));
+    const sm=rewardHistory.map((_,i)=>{ const sl=rewardHistory.slice(Math.max(0,i-win),i+1); return sl.reduce((a,b)=>a+b,0)/sl.length; });
+    const svg=document.getElementById("reward-chart");
+    svg.setAttribute("viewBox",`0 0 ${n} 1`);
+    svg.querySelectorAll("polyline,polygon,text").forEach(e=>e.remove());
+    const pts=sm.map((v,i)=>`${i},${1-v}`).join(" ");
+    const poly=document.createElementNS("http://www.w3.org/2000/svg","polygon");
+    poly.setAttribute("points",`0,1 ${pts} ${n-1},1`); poly.setAttribute("fill","url(#grad)"); svg.appendChild(poly);
+    const line=document.createElementNS("http://www.w3.org/2000/svg","polyline");
+    line.setAttribute("points",pts); line.setAttribute("fill","none"); line.setAttribute("stroke","#4af0a0"); line.setAttribute("stroke-width","0.015"); svg.appendChild(line);
+    document.getElementById("chart-ep-label").textContent=`ep ${n}`;
+}
+
+// Speed
+function speedToDelay(s) { if(s>=95)return 0; return Math.round(Math.pow((100-s)/100,2)*300); }
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+
+// Training
+async function startTraining() {
+    if(running)return;
+    running=true; rewardHistory=[];
+    qtable=Array.from({length:mapSize*mapSize},()=>[0,0,0,0]);
+    const ids=["btn-train","btn-reset","mapsize","lr","gamma","epsilon","episodes"];
+    ids.forEach(id=>document.getElementById(id).disabled=true);
+    document.getElementById("btn-stop").style.display="block";
+    document.getElementById("done-label").textContent="";
+    const totalEp=parseInt(document.getElementById("episodes").value);
+    let successes=0;
+
+    for(let ep=0;ep<totalEp;ep++){
+        if(!running)break;
+        let state=0,done=false,totalR=0; agentPos=0;
+        const speed=parseInt(document.getElementById("speed").value);
+        const delay=speedToDelay(speed), fast=delay===0;
+        document.getElementById("turbo-label").textContent=fast?"⚡ Turbo mode — UI updates every 10 episodes":"";
+
+        while(!done&&running){
+            const eps=parseFloat(document.getElementById("epsilon").value);
+            const action=qChooseAction(state,eps);
+            const {ns,reward,done:d}=stepEnv(state,action);
+            qUpdate(state,action,reward,ns);
+            totalR+=reward; state=ns; done=d; agentPos=state;
+            if(!fast){ updateGridColors(); updateQTableColors(); if(delay>0)await sleep(delay); }
+        }
+
+        if(totalR>0)successes++;
+        rewardHistory.push(totalR);
+        if(fast?(ep%10===0):true){
+            if(fast){updateGridColors();updateQTableColors();await sleep(0);}
+            document.getElementById("stat-ep").textContent=`${ep+1} / ${totalEp}`;
+            document.getElementById("stat-sr").textContent=Math.round(successes/(ep+1)*100)+"%";
+            updateChart();
+        }
+    }
+
+    agentPos=-1; updateGridColors(); updateQTableColors(); updateChart();
+    document.getElementById("stat-ep").textContent=`${totalEp} / ${totalEp}`;
+    document.getElementById("stat-sr").textContent=Math.round(successes/totalEp*100)+"%";
+    document.getElementById("done-label").textContent="✓ Training complete!";
+    document.getElementById("turbo-label").textContent="";
+    running=false;
+    ids.forEach(id=>document.getElementById(id).disabled=false);
+    document.getElementById("btn-stop").style.display="none";
+}
+
+function stopTraining(){
+    running=false;
+    ["btn-train","btn-reset","mapsize","lr","gamma","epsilon","episodes"].forEach(id=>document.getElementById(id).disabled=false);
+    document.getElementById("btn-stop").style.display="none";
+    document.getElementById("turbo-label").textContent="";
+}
+
+function resetAll(){ running=false; setTimeout(buildGrid,80); }
+
+// Slider labels
+function updateLabel(id,name){ document.getElementById(`label-${id}`).textContent=`${name} = ${document.getElementById(id).value}`; }
+function onSpeedChange(){
+    const s=parseInt(document.getElementById("speed").value);
+    document.getElementById("label-speed").textContent=`Speed = ${s}`;
+    document.getElementById("turbo-label").textContent=speedToDelay(s)===0?"⚡ Turbo mode — UI updates every 10 episodes":"";
+}
+function onEpsilonChange(){
+    const eps=parseFloat(document.getElementById("epsilon").value);
+    document.getElementById("label-epsilon").textContent=`ε = ${eps}`;
+    const pct=Math.round(eps*100);
+    document.getElementById("ee-explore").style.width=pct+"%";
+    document.getElementById("ee-explore-label").textContent=`🎲 ${pct}%`;
+    document.getElementById("ee-exploit-label").textContent=`${100-pct}% 🧠`;
+}
+
+// Tooltips
+const TOOLTIPS={
+    lr:     {sym:"α",name:"Learning Rate",      desc:"How much Q-values are updated after each step.\n\nHigh α (e.g. 0.9) = large updates, learns fast but can be unstable.\nLow α (e.g. 0.1) = small nudges, slow but stable.\n\nFormula:  Q(s,a) ← Q(s,a) + α · δ", extra:false},
+    gamma:  {sym:"γ",name:"Discount Factor",    desc:"How much the agent values future rewards vs. immediate ones.\n\nγ ≈ 1.0 = far-sighted. Crucial for FrozenLake — the reward only comes at the very end of the episode!\n\nγ ≈ 0.1 = short-sighted, only cares about the next step.", extra:false},
+    epsilon:{sym:"ε",name:"Explore vs. Exploit",desc:"Every step the agent flips a coin:\n\n• Probability ε    → random action  (EXPLORE)\n• Probability 1−ε → best known action (EXPLOIT)\n\nHigh ε = more exploration, discovers more paths.\nLow ε  = mostly exploits learned knowledge.", extra:true},
+};
+
+function showTooltip(key){
+    const t=TOOLTIPS[key];
+    document.getElementById("tooltip-title").textContent=`${t.sym} — ${t.name}`;
+    document.getElementById("tooltip-desc").textContent=t.desc;
+    const extra=document.getElementById("tooltip-extra");
+    if(t.extra){
+        const eps=parseFloat(document.getElementById("epsilon").value);
+        extra.innerHTML=`<div class="tt-explore">🎲 EXPLORE — random — ${Math.round(eps*100)}% chance</div><div class="tt-exploit">🧠 EXPLOIT — best known — ${Math.round((1-eps)*100)}% chance</div>`;
+        extra.style.display="block";
+    } else { extra.style.display="none"; }
+    document.getElementById("tooltip-overlay").classList.add("visible");
+}
+function closeTooltip(){ document.getElementById("tooltip-overlay").classList.remove("visible"); }
+document.getElementById("tooltip-overlay").addEventListener("click",function(e){ if(e.target===this)closeTooltip(); });
+
+// Init
+buildGrid();
+</script>
+</body>
+</html>
