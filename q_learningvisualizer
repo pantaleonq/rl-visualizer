@@ -98,11 +98,11 @@
 <h1>Q-Learning Visualizer</h1>
 <p class="subtitle">Q(s,a) ← Q(s,a) + α · [ r + γ · max Q(s′,a′) − Q(s,a) ]</p>
 <p class="author">
-    by <a href="https://github.com/DEIN_USERNAME" target="_blank">Pantaleon Quick</a>
+    by <a href="https://github.com/pantaleonq" target="_blank">Pantaleon Quick</a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/DEIN_USERNAME/rl-visualizer" target="_blank">GitHub</a>
+    <a href="https://github.com/pantaleonq/rl-visualizer" target="_blank">GitHub</a>
     &nbsp;·&nbsp; inspired by my
-    <a href="https://github.com/DEIN_USERNAME/bachelor-thesis" target="_blank">Bachelor Thesis on RL Convergence</a>
+    <a href="https://github.com/pantaleonq/bachelor-thesis" target="_blank">Bachelor Thesis on RL Convergence</a>
 </p>
 <p class="turbo-label" id="turbo-label"></p>
 
