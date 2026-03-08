@@ -18,7 +18,8 @@
         .subtitle  { color: var(--muted); font-size: 0.72rem; text-align: center; margin-bottom: 0.15rem; }
         .author    { color: var(--muted); font-size: 0.65rem; text-align: center; margin-bottom: 0.25rem; }
         .turbo-label { color: var(--red); font-size: 0.65rem; text-align: center; min-height: 1rem; margin-bottom: 0.5rem; }
-        .layout { display: flex; gap: 1rem; flex-wrap: wrap; justify-content: center; align-items: flex-start; }
+        .layout { display: flex; gap: 1rem; flex-wrap: nowrap; justify-content: center; align-items: flex-start; overflow-x: auto; padding-bottom: 1rem; }
+        @media (max-width: 900px) { .layout { flex-wrap: wrap; } }
         .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; }
         .panel-label { color: var(--accent); font-size: 0.6rem; letter-spacing: 0.15em; margin-bottom: 0.75rem; }
         #controls { width: 200px; flex-shrink: 0; }
@@ -81,7 +82,7 @@
         .tt-exploit { color: var(--accent); }
         #tooltip-close { margin-top: 1rem; background: transparent; border: 1px solid var(--border); border-radius: 4px; color: var(--muted); padding: 0.3rem 0.8rem; font-family: inherit; font-size: 0.75rem; cursor: pointer; }
         .footer { text-align: center; margin-top: 2rem; font-size: 0.62rem; color: var(--muted); border-top: 1px solid var(--border); padding-top: 1rem; }
-        @media (max-width: 600px) { #controls { width: 100%; } #qtable-panel { width: 100%; max-height: 200px; } }
+        @media (max-width: 900px) { #controls { width: 100%; } #qtable-panel { width: 100%; max-height: 200px; } }
     </style>
 </head>
 <body>
@@ -98,11 +99,11 @@
 <h1>Q-Learning Visualizer</h1>
 <p class="subtitle">Q(s,a) ← Q(s,a) + α · [ r + γ · max Q(s′,a′) − Q(s,a) ]</p>
 <p class="author">
-    by <a href="https://github.com/pantaleonq" target="_blank">Pantaleon Quick</a>
+    by <a href="https://github.com/DEIN_USERNAME" target="_blank">Pantaleon Quick</a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/pantaleonq/rl-visualizer" target="_blank">GitHub</a>
+    <a href="https://github.com/DEIN_USERNAME/rl-visualizer" target="_blank">GitHub</a>
     &nbsp;·&nbsp; inspired by my
-    <a href="https://github.com/pantaleonq/bachelor-thesis" target="_blank">Bachelor Thesis on RL Convergence</a>
+    <a href="https://github.com/DEIN_USERNAME/bachelor-thesis" target="_blank">Bachelor Thesis on RL Convergence</a>
 </p>
 <p class="turbo-label" id="turbo-label"></p>
 
@@ -219,8 +220,8 @@
 <script>
 // ═══════════════════════════════════════════════════════
 //  Q-LEARNING VISUALIZER
-//  Pantaleon Quick · github.com/pantaleonq
-//  Inspired by Bachelor Thesis on RL Convergence (FU Berlin)
+//  Pantaleon Quick · github.com/DEIN_USERNAME
+//  Inspired by Bachelor Thesis on RL Convergence (FU Berlin, grade 1.0)
 // ═══════════════════════════════════════════════════════
 
 let running = false, agentPos = 0, grid = [], qtable = [], mapSize = 5, rewardHistory = [];
